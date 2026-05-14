@@ -10,6 +10,11 @@
     <div id="app">
         <div id="login-view" class="view">
             <h1>SiSMoChat</h1>
+            <div class="section">
+                <input type="text" id="api-base" placeholder="API URL (e.g. http://192.168.1.37:3000)">
+                <button id="btn-set-api">Set API URL</button>
+                <p id="api-status" style="font-size:0.8em;color:#666;"></p>
+            </div>
             <div class="tabs">
                 <button class="tab active" data-tab="parent-login">Parent</button>
                 <button class="tab" data-tab="user-login">User</button>

@@ -60,6 +60,15 @@ function renderLocalMessages() {
     });
 }
 
+// API URL config
+document.getElementById('api-base').value = localStorage.getItem('apiBase') || 'http://localhost:3000';
+document.getElementById('api-status').textContent = 'Current: ' + (localStorage.getItem('apiBase') || 'http://localhost:3000');
+document.getElementById('btn-set-api').addEventListener('click', () => {
+    const url = document.getElementById('api-base').value.replace(/\/$/, '');
+    localStorage.setItem('apiBase', url);
+    document.getElementById('api-status').textContent = 'Set to: ' + url + ' (reload page)';
+});
+
 // Tabs
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
