@@ -27,7 +27,8 @@ const api = {
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch(API_BASE + path, opts);
         if (res.status === 204) return null;
-        const data = await res.json().catch(() => null);
+        const contentType = res.headers.get('content-type') || '';
+        const data = contentType.includes('application/json') ? await res.json().catch(() => null) : await res.text();
         if (!res.ok) throw { status: res.status, data };
         return data;
     },
@@ -39,7 +40,7 @@ const api = {
 
     // Users
     createChild(nick) { return this.request('POST', '/api/user/', { nick }); },
-    getChildrenByParent(email) { return this.request('GET', '/api/user/parent/' + email); },
+    getChildrenByParent(email) { return this.request('GET', '/api/user/parent/' + encodeURIComponent(email)); },
 
     // Devices
     createDevice(userid) { return this.request('POST', '/api/device/' + userid); },

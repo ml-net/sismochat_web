@@ -2,6 +2,28 @@
 let currentProfile = null; // 'Parent' or 'User'
 let parentEmail = null;
 
+// Crypto helpers
+async function privateEncrypt(message, privateKeyPem) {
+    const forge = window.forge;
+    if (!forge) throw new Error('forge library not loaded');
+    const privateKey = forge.pki.decryptRsaPrivateKey(privateKeyPem, '');
+    if (!privateKey) throw new Error('Failed to decrypt private key');
+    // Equivalent to Node crypto.privateEncrypt (PKCS1 v1.5 type 1 padding)
+    const bytes = forge.util.encodeUtf8(message);
+    const encrypted = forge.pki.rsa.encrypt(bytes, privateKey, 0x01);
+    return forge.util.encode64(encrypted);
+}
+
+function saveChildCredentials(userId, deviceId, keys) {
+    const children = JSON.parse(localStorage.getItem('childCredentials') || '{}');
+    children[userId] = { deviceId, keys };
+    localStorage.setItem('childCredentials', JSON.stringify(children));
+}
+
+function getChildCredentials() {
+    return JSON.parse(localStorage.getItem('childCredentials') || '{}');
+}
+
 // Views
 const views = {
     login: document.getElementById('login-view'),
@@ -32,7 +54,8 @@ function renderLocalMessages() {
     list.innerHTML = '';
     getLocalMessages().forEach(msg => {
         const li = document.createElement('li');
-        li.textContent = `From: ${msg.from} - ${msg.body}`;
+        const date = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : '';
+        li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
         list.appendChild(li);
     });
 }
@@ -44,6 +67,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         tab.classList.add('active');
         document.getElementById(tab.dataset.tab).classList.add('active');
+        if (tab.dataset.tab === 'user-login') populateUserSelect();
     });
 });
 
@@ -54,9 +78,10 @@ document.getElementById('btn-parent-login').addEventListener('click', async () =
         const pwd = document.getElementById('parent-pwd').value;
         const res = await api.loginParent(email, pwd);
         api.setToken(res.token);
-        parentEmail = email;
+        const payload = JSON.parse(atob(res.token.split('.')[1]));
+        parentEmail = payload.email;
         currentProfile = 'Parent';
-        document.getElementById('parent-email-display').textContent = email;
+        document.getElementById('parent-email-display').textContent = parentEmail;
         showView('parent');
         loadChildren();
     } catch (e) {
@@ -72,14 +97,38 @@ document.getElementById('btn-parent-register').addEventListener('click', async (
         await api.registerParent(email, pwd);
         document.getElementById('login-error').textContent = 'Registered! Now login.';
     } catch (e) {
-        document.getElementById('login-error').textContent = e.data?.errDesc || 'Registration failed';
+        const details = e.data?.details?.map(d => d.msg).join(', ') || '';
+        document.getElementById('login-error').textContent = e.data?.errDesc || details || 'Registration failed';
     }
 });
+
+// Populate user selector from saved credentials
+function populateUserSelect() {
+    const select = document.getElementById('user-select');
+    select.innerHTML = '<option value="">Select a child user...</option>';
+    const creds = getChildCredentials();
+    Object.keys(creds).forEach(userId => {
+        const opt = document.createElement('option');
+        opt.value = userId;
+        opt.textContent = userId.substring(0, 8) + '...';
+        select.appendChild(opt);
+    });
+}
 
 // User login
 document.getElementById('btn-user-login').addEventListener('click', async () => {
     try {
-        const token = document.getElementById('user-token').value;
+        const userId = document.getElementById('user-select').value;
+        if (!userId) return;
+        const creds = getChildCredentials()[userId];
+        if (!creds) {
+            document.getElementById('login-error').textContent = 'No credentials found for this user';
+            return;
+        }
+        const encodedUserId = btoa(userId);
+        const encodedDeviceId = btoa(creds.deviceId);
+        const encryptedDevice = await privateEncrypt(creds.deviceId, creds.keys.private);
+        const token = encodedUserId + '.' + encodedDeviceId + '.' + encryptedDevice;
         const res = await api.loginUser(token);
         api.setToken(res.token);
         currentProfile = 'User';
@@ -98,8 +147,9 @@ document.getElementById('btn-create-child').addEventListener('click', async () =
         const nick = document.getElementById('child-nick').value;
         const res = await api.createChild(nick);
         const deviceRes = await api.createDevice(res.ID);
+        saveChildCredentials(res.ID, deviceRes, res.keys);
         document.getElementById('child-result').textContent =
-            `Created! ID: ${res.ID}, Device: ${deviceRes}, Keys generated.`;
+            `Created! ID: ${res.ID}, Device: ${deviceRes}`;
         loadChildren();
     } catch (e) {
         document.getElementById('child-result').textContent = e.data?.errDesc || 'Failed';
@@ -130,7 +180,7 @@ document.getElementById('btn-send').addEventListener('click', async () => {
         await api.sendMessage(to, body);
         document.getElementById('msg-body').value = '';
         // Save sent message locally
-        saveLocalMessage({ id: Date.now().toString(), from: 'me', to, body });
+        saveLocalMessage({ id: Date.now().toString(), from: 'me', to, body, createdAt: new Date().toISOString() });
         renderLocalMessages();
     } catch (e) {
         alert(e.data?.msg || 'Send failed');
