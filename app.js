@@ -56,8 +56,28 @@ function renderLocalMessages() {
         const li = document.createElement('li');
         const date = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : '';
         li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
+        if (msg.from === 'me' && msg.serverMsgId) {
+            const btn = document.createElement('button');
+            btn.textContent = 'Withdraw';
+            btn.style.marginLeft = '10px';
+            btn.onclick = async () => {
+                try {
+                    await api.deleteMessage(msg.serverMsgId);
+                    removeLocalMessage(msg.id);
+                    renderLocalMessages();
+                } catch (e) {
+                    alert(e.data?.msg || 'Cannot withdraw (already downloaded?)');
+                }
+            };
+            li.appendChild(btn);
+        }
         list.appendChild(li);
     });
+}
+
+function removeLocalMessage(id) {
+    const msgs = getLocalMessages().filter(m => m.id !== id);
+    localStorage.setItem('messages', JSON.stringify(msgs));
 }
 
 // API URL config
@@ -235,10 +255,10 @@ document.getElementById('btn-send').addEventListener('click', async () => {
     try {
         const to = document.getElementById('msg-to').value;
         const body = document.getElementById('msg-body').value;
-        await api.sendMessage(to, body);
+        const result = await api.sendMessage(to, body);
         document.getElementById('msg-body').value = '';
         // Save sent message locally
-        saveLocalMessage({ id: Date.now().toString(), from: 'me', to, body, createdAt: new Date().toISOString() });
+        saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body, createdAt: new Date().toISOString() });
         renderLocalMessages();
     } catch (e) {
         alert(e.data?.msg || 'Send failed');
