@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiSMoChat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <div id="login-view" class="view">
+            <h1>SiSMoChat</h1>
+            <div class="tabs">
+                <button class="tab active" data-tab="parent-login">Parent</button>
+                <button class="tab" data-tab="user-login">User</button>
+            </div>
+            <div id="parent-login" class="tab-content active">
+                <input type="email" id="parent-email" placeholder="Email">
+                <input type="password" id="parent-pwd" placeholder="Password">
+                <button id="btn-parent-login">Login</button>
+                <button id="btn-parent-register">Register</button>
+            </div>
+            <div id="user-login" class="tab-content">
+                <input type="text" id="user-token" placeholder="Device token">
+                <button id="btn-user-login">Login</button>
+            </div>
+            <p id="login-error" class="error"></p>
+        </div>
+
+        <div id="parent-view" class="view hidden">
+            <h2>Parent Dashboard</h2>
+            <p>Logged in as: <span id="parent-email-display"></span></p>
+            <div class="section">
+                <h3>Create Child User</h3>
+                <input type="text" id="child-nick" placeholder="Nickname">
+                <button id="btn-create-child">Create</button>
+                <p id="child-result"></p>
+            </div>
+            <div class="section">
+                <h3>My Children</h3>
+                <ul id="children-list"></ul>
+            </div>
+            <div class="section">
+                <h3>Connection Requests</h3>
+                <ul id="approval-list"></ul>
+            </div>
+            <button id="btn-parent-logout">Logout</button>
+        </div>
+
+        <div id="chat-view" class="view hidden">
+            <h2>Chat - <span id="chat-nick"></span></h2>
+            <div class="section">
+                <h3>Send Message</h3>
+                <input type="text" id="msg-to" placeholder="Recipient ID">
+                <input type="text" id="msg-body" placeholder="Message">
+                <button id="btn-send">Send</button>
+            </div>
+            <div class="section">
+                <h3>Inbox</h3>
+                <button id="btn-refresh">Refresh</button>
+                <ul id="inbox"></ul>
+            </div>
+            <div class="section">
+                <h3>Local Messages</h3>
+                <ul id="local-messages"></ul>
+            </div>
+            <button id="btn-user-logout">Logout</button>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
