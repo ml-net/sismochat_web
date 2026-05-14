@@ -47,6 +47,14 @@
             </div>
             <div class="section">
                 <h3>Connection Requests</h3>
+                <input type="text" id="conn-from" placeholder="From (your child UUID)">
+                <input type="text" id="conn-to" placeholder="To (other child UUID)">
+                <button id="btn-request-conn">Request Connection</button>
+                <p id="conn-result"></p>
+            </div>
+            <div class="section">
+                <h3>Pending Approvals</h3>
+                <button id="btn-refresh-approvals">Refresh</button>
                 <ul id="approval-list"></ul>
             </div>
             <button id="btn-parent-logout">Logout</button>

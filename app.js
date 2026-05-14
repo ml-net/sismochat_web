@@ -181,6 +181,55 @@ async function loadChildren() {
     }
 }
 
+// Request connection
+document.getElementById('btn-request-conn').addEventListener('click', async () => {
+    try {
+        const from = document.getElementById('conn-from').value;
+        const to = document.getElementById('conn-to').value;
+        await api.requestConnection(from, to);
+        document.getElementById('conn-result').textContent = 'Connection requested!';
+    } catch (e) {
+        document.getElementById('conn-result').textContent = e.data?.errDesc || e.data || 'Failed';
+    }
+});
+
+// Refresh approvals
+document.getElementById('btn-refresh-approvals').addEventListener('click', loadApprovals);
+
+async function loadApprovals() {
+    try {
+        const list = await api.getApprovalList(parentEmail);
+        const ul = document.getElementById('approval-list');
+        ul.innerHTML = '';
+        if (!list || list.length === 0) {
+            ul.innerHTML = '<li>No pending requests</li>';
+            return;
+        }
+        list.forEach(conn => {
+            const li = document.createElement('li');
+            li.textContent = `${conn.from} → ${conn.to} `;
+            const btnApprove = document.createElement('button');
+            btnApprove.textContent = 'Approve';
+            btnApprove.onclick = async () => {
+                await api.approveConnection(conn.id, 0); // ACCEPTED
+                loadApprovals();
+            };
+            const btnReject = document.createElement('button');
+            btnReject.textContent = 'Reject';
+            btnReject.style.marginLeft = '5px';
+            btnReject.onclick = async () => {
+                await api.approveConnection(conn.id, 2); // REJECTED
+                loadApprovals();
+            };
+            li.appendChild(btnApprove);
+            li.appendChild(btnReject);
+            ul.appendChild(li);
+        });
+    } catch (e) {
+        document.getElementById('approval-list').innerHTML = '<li>No pending requests</li>';
+    }
+}
+
 // Send message
 document.getElementById('btn-send').addEventListener('click', async () => {
     try {
