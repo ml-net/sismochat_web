@@ -165,6 +165,7 @@ document.getElementById('btn-user-login').addEventListener('click', async () => 
         document.getElementById('chat-nick').textContent = payload.nick;
         showView('chat');
         renderLocalMessages();
+        connectWebSocket(res.token);
     } catch (e) {
         document.getElementById('login-error').textContent = e.data?.errDesc || 'Login failed';
     }
@@ -402,3 +403,44 @@ document.getElementById('btn-user-logout').addEventListener('click', () => {
     api.clearToken();
     showView('login');
 });
+
+// WebSocket connection
+let ws = null;
+function connectWebSocket(token) {
+    const wsBase = (localStorage.getItem('apiBase') || 'http://localhost:3000').replace('http', 'ws');
+    ws = new WebSocket(wsBase + '/ws?token=' + token);
+
+    ws.onopen = () => {
+        console.log('WS connected');
+        document.getElementById('chat-nick').textContent += ' 🟢';
+    };
+
+    ws.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        console.log('WS notification:', data);
+        if (data.type === 'new_message') {
+            // Auto-fetch new messages
+            try {
+                const list = await api.getMessageList(0, 10);
+                const inbox = document.getElementById('inbox');
+                for (const item of list) {
+                    const msg = await api.getMessage(item.msgID);
+                    saveLocalMessage(msg);
+                    await api.deleteMessage(item.msgID);
+                    const li = document.createElement('li');
+                    li.textContent = `From: ${msg.from.substring(0,8)}... - ${msg.body} [live]`;
+                    inbox.appendChild(li);
+                }
+                renderLocalMessages();
+            } catch (e) { /* no messages */ }
+        }
+    };
+
+    ws.onclose = () => {
+        console.log('WS disconnected, reconnecting in 3s...');
+        setTimeout(() => {
+            const t = api.getToken();
+            if (t) connectWebSocket(t);
+        }, 3000);
+    };
+}
