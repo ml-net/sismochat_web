@@ -52,7 +52,7 @@ function getLocalMessages() {
 function renderLocalMessages() {
     const list = document.getElementById('local-messages');
     list.innerHTML = '';
-    getLocalMessages().forEach(msg => {
+    getLocalMessages().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(msg => {
         const li = document.createElement('li');
         const date = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : '';
         li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
