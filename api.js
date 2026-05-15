@@ -36,6 +36,7 @@ const api = {
     // Auth
     loginParent(email, pwd) { return this.request('POST', '/api/v1/auth/parent', { email, pwd }); },
     registerParent(email, pwd) { return this.request('POST', '/api/v1/super/', { email, pwd }); },
+    changePassword(oldPassword, newPassword) { return this.request('PATCH', '/api/v1/super/password', { oldPassword, newPassword }); },
     loginUser(token) { return this.request('POST', '/api/v1/auth/user', { token }); },
 
     // Users
@@ -48,7 +49,7 @@ const api = {
     createDevice(userid) { return this.request('POST', '/api/v1/device/' + userid); },
 
     // Messages
-    getMessageList(status) { return this.request('GET', '/api/v1/message/list/' + status); },
+    getMessageList(status, limit) { return this.request('GET', '/api/v1/message/list/' + status + (limit ? '?limit=' + limit : '')); },
     getMessage(id) { return this.request('GET', '/api/v1/message/' + id); },
     sendMessage(to, message) { return this.request('POST', '/api/v1/message/', { to, message }); },
     deleteMessage(id) { return this.request('DELETE', '/api/v1/message/' + id); },

@@ -62,11 +62,23 @@
                 <button id="btn-refresh-approvals">Refresh</button>
                 <ul id="approval-list"></ul>
             </div>
+            <div class="section">
+                <h3>Change Password</h3>
+                <input type="password" id="old-pwd" placeholder="Current password">
+                <input type="password" id="new-pwd" placeholder="New password (min 6 chars)">
+                <button id="btn-change-pwd">Change Password</button>
+                <p id="pwd-result"></p>
+            </div>
             <button id="btn-parent-logout">Logout</button>
         </div>
 
         <div id="chat-view" class="view hidden">
             <h2>Chat - <span id="chat-nick"></span></h2>
+            <div class="section">
+                <h3>My Contacts</h3>
+                <button id="btn-load-contacts">Load</button>
+                <ul id="contacts-list"></ul>
+            </div>
             <div class="section">
                 <h3>Send Message</h3>
                 <input type="text" id="msg-to" placeholder="Recipient ID">

@@ -197,7 +197,15 @@ async function loadChildren() {
             idSpan.textContent = `${u.nick} (${u.id.substring(0, 8)}...)`;
             idSpan.title = u.id;
             idSpan.style.cursor = 'pointer';
-            idSpan.onclick = () => { navigator.clipboard.writeText(u.id); idSpan.textContent = `${u.nick} (copied!)`; setTimeout(() => { idSpan.textContent = `${u.nick} (${u.id.substring(0, 8)}...)`; }, 1000); };
+            idSpan.onclick = () => { 
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(u.id); 
+                    idSpan.textContent = `${u.nick} (copied!)`;
+                } else {
+                    prompt('Copy this UUID:', u.id);
+                }
+                setTimeout(() => { idSpan.textContent = `${u.nick} (${u.id.substring(0, 8)}...)`; }, 1000); 
+            };
             li.appendChild(idSpan);
             li.appendChild(document.createTextNode(' '));
             const btnEdit = document.createElement('button');
@@ -299,6 +307,40 @@ async function loadApprovals() {
     }
 }
 
+// Load contacts
+document.getElementById('btn-load-contacts').addEventListener('click', async () => {
+    try {
+        const list = await api.getConnections();
+        const ul = document.getElementById('contacts-list');
+        ul.innerHTML = '';
+        if (!list || list.length === 0) {
+            ul.innerHTML = '<li>No contacts</li>';
+            return;
+        }
+        list.forEach(id => {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.textContent = id.substring(0, 8) + '...';
+            span.title = id;
+            span.style.cursor = 'pointer';
+            span.onclick = () => {
+                document.getElementById('msg-to').value = id;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(id);
+                    span.textContent = 'copied!';
+                } else {
+                    prompt('UUID:', id);
+                }
+                setTimeout(() => { span.textContent = id.substring(0, 8) + '...'; }, 1000);
+            };
+            li.appendChild(span);
+            ul.appendChild(li);
+        });
+    } catch (e) {
+        document.getElementById('contacts-list').innerHTML = '<li>No contacts</li>';
+    }
+});
+
 // Send message
 document.getElementById('btn-send').addEventListener('click', async () => {
     try {
@@ -317,7 +359,7 @@ document.getElementById('btn-send').addEventListener('click', async () => {
 // Refresh inbox (download + ACK)
 document.getElementById('btn-refresh').addEventListener('click', async () => {
     try {
-        const list = await api.getMessageList(0); // UNREAD
+        const list = await api.getMessageList(0, 2); // UNREAD, limit=2 for testing
         const inbox = document.getElementById('inbox');
         inbox.innerHTML = '';
         for (const item of list) {
@@ -337,6 +379,21 @@ document.getElementById('btn-refresh').addEventListener('click', async () => {
 });
 
 // Logout
+// Change password
+document.getElementById('btn-change-pwd').addEventListener('click', async () => {
+    try {
+        const oldPwd = document.getElementById('old-pwd').value;
+        const newPwd = document.getElementById('new-pwd').value;
+        await api.changePassword(oldPwd, newPwd);
+        document.getElementById('pwd-result').textContent = 'Password changed!';
+        document.getElementById('old-pwd').value = '';
+        document.getElementById('new-pwd').value = '';
+    } catch (e) {
+        const msg = e.data?.details?.map(d => d.msg).join(', ') || e.data?.errDesc || 'Failed';
+        document.getElementById('pwd-result').textContent = msg;
+    }
+});
+
 document.getElementById('btn-parent-logout').addEventListener('click', () => {
     api.clearToken();
     showView('login');
