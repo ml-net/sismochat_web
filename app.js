@@ -193,7 +193,13 @@ async function loadChildren() {
         ul.innerHTML = '';
         list.forEach(u => {
             const li = document.createElement('li');
-            li.textContent = `${u.nick} (${u.id.substring(0, 8)}...) `;
+            const idSpan = document.createElement('span');
+            idSpan.textContent = `${u.nick} (${u.id.substring(0, 8)}...)`;
+            idSpan.title = u.id;
+            idSpan.style.cursor = 'pointer';
+            idSpan.onclick = () => { navigator.clipboard.writeText(u.id); idSpan.textContent = `${u.nick} (copied!)`; setTimeout(() => { idSpan.textContent = `${u.nick} (${u.id.substring(0, 8)}...)`; }, 1000); };
+            li.appendChild(idSpan);
+            li.appendChild(document.createTextNode(' '));
             const btnEdit = document.createElement('button');
             btnEdit.textContent = 'Edit';
             btnEdit.onclick = async () => {
