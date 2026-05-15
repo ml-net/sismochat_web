@@ -193,7 +193,27 @@ async function loadChildren() {
         ul.innerHTML = '';
         list.forEach(u => {
             const li = document.createElement('li');
-            li.textContent = `${u.nick} (${u.id})`;
+            li.textContent = `${u.nick} (${u.id.substring(0, 8)}...) `;
+            const btnEdit = document.createElement('button');
+            btnEdit.textContent = 'Edit';
+            btnEdit.onclick = async () => {
+                const newNick = prompt('New nickname:', u.nick);
+                if (newNick && newNick.trim()) {
+                    await api.editChildNick(u.id, newNick.trim());
+                    loadChildren();
+                }
+            };
+            const btnDelete = document.createElement('button');
+            btnDelete.textContent = 'Delete';
+            btnDelete.style.marginLeft = '5px';
+            btnDelete.onclick = async () => {
+                if (confirm(`Delete ${u.nick}? This cannot be undone.`)) {
+                    await api.deleteChild(u.id);
+                    loadChildren();
+                }
+            };
+            li.appendChild(btnEdit);
+            li.appendChild(btnDelete);
             ul.appendChild(li);
         });
     } catch (e) {
@@ -215,6 +235,29 @@ document.getElementById('btn-request-conn').addEventListener('click', async () =
 
 // Refresh approvals
 document.getElementById('btn-refresh-approvals').addEventListener('click', loadApprovals);
+
+// Refresh sent requests
+document.getElementById('btn-refresh-sent').addEventListener('click', loadSentRequests);
+
+async function loadSentRequests() {
+    try {
+        const list = await api.getSentRequests(parentEmail);
+        const ul = document.getElementById('sent-list');
+        ul.innerHTML = '';
+        if (!list || list.length === 0) {
+            ul.innerHTML = '<li>No sent requests</li>';
+            return;
+        }
+        const statusNames = ['Accepted', 'Requested', 'Rejected'];
+        list.forEach(r => {
+            const li = document.createElement('li');
+            li.textContent = `${r.from.substring(0, 8)}... → ${r.to.substring(0, 8)}... [${statusNames[r.status]}]`;
+            ul.appendChild(li);
+        });
+    } catch (e) {
+        document.getElementById('sent-list').innerHTML = '<li>No sent requests</li>';
+    }
+}
 
 async function loadApprovals() {
     try {

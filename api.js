@@ -34,26 +34,29 @@ const api = {
     },
 
     // Auth
-    loginParent(email, pwd) { return this.request('POST', '/api/auth/parent', { email, pwd }); },
-    registerParent(email, pwd) { return this.request('POST', '/api/super/', { email, pwd }); },
-    loginUser(token) { return this.request('POST', '/api/auth/user', { token }); },
+    loginParent(email, pwd) { return this.request('POST', '/api/v1/auth/parent', { email, pwd }); },
+    registerParent(email, pwd) { return this.request('POST', '/api/v1/super/', { email, pwd }); },
+    loginUser(token) { return this.request('POST', '/api/v1/auth/user', { token }); },
 
     // Users
-    createChild(nick) { return this.request('POST', '/api/user/', { nick }); },
-    getChildrenByParent(email) { return this.request('GET', '/api/user/parent/' + encodeURIComponent(email)); },
+    createChild(nick) { return this.request('POST', '/api/v1/user/', { nick }); },
+    getChildrenByParent(email) { return this.request('GET', '/api/v1/user/parent/' + encodeURIComponent(email)); },
+    editChildNick(userid, nick) { return this.request('PATCH', '/api/v1/user/' + userid, { nick }); },
+    deleteChild(userid) { return this.request('DELETE', '/api/v1/user/' + userid); },
 
     // Devices
-    createDevice(userid) { return this.request('POST', '/api/device/' + userid); },
+    createDevice(userid) { return this.request('POST', '/api/v1/device/' + userid); },
 
     // Messages
-    getMessageList(status) { return this.request('GET', '/api/message/list/' + status); },
-    getMessage(id) { return this.request('GET', '/api/message/' + id); },
-    sendMessage(to, message) { return this.request('POST', '/api/message/', { to, message }); },
-    deleteMessage(id) { return this.request('DELETE', '/api/message/' + id); },
+    getMessageList(status) { return this.request('GET', '/api/v1/message/list/' + status); },
+    getMessage(id) { return this.request('GET', '/api/v1/message/' + id); },
+    sendMessage(to, message) { return this.request('POST', '/api/v1/message/', { to, message }); },
+    deleteMessage(id) { return this.request('DELETE', '/api/v1/message/' + id); },
 
     // Connections
-    getConnections() { return this.request('GET', '/api/connection/'); },
-    requestConnection(from, to) { return this.request('POST', '/api/connection/' + from + '/' + to); },
-    getApprovalList(parent) { return this.request('GET', '/api/connection/approvalList/' + parent); },
-    approveConnection(connId, status) { return this.request('PATCH', '/api/connection/' + connId, { status }); },
+    getConnections() { return this.request('GET', '/api/v1/connection/'); },
+    requestConnection(from, to) { return this.request('POST', '/api/v1/connection/' + from + '/' + to); },
+    getApprovalList(parent) { return this.request('GET', '/api/v1/connection/approvalList/' + parent); },
+    getSentRequests(parent) { return this.request('GET', '/api/v1/connection/sent/' + parent); },
+    approveConnection(connId, status) { return this.request('PATCH', '/api/v1/connection/' + connId, { status }); },
 };
