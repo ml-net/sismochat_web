@@ -64,10 +64,10 @@ function renderLocalMessages() {
             li.innerHTML = `[${date}] From: ${msg.from} → To: ${msg.to} - `;
             const audio = document.createElement('audio');
             audio.controls = true;
-            audio.src = 'data:audio/webm;base64,' + msg.body;
-            if (!audio.canPlayType('audio/webm')) {
-                audio.src = 'data:audio/mp4;base64,' + msg.body;
-            }
+            const parts = msg.body.split(':');
+            const mime = parts.length > 1 && parts[0].startsWith('audio/') ? parts[0] : 'audio/webm';
+            const data = parts.length > 1 && parts[0].startsWith('audio/') ? parts.slice(1).join(':') : msg.body;
+            audio.src = 'data:' + mime + ';base64,' + data;
             li.appendChild(audio);
         } else {
             li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
@@ -532,7 +532,10 @@ document.getElementById('btn-sticker').addEventListener('click', () => {
         if (!to) { alert('Select a recipient first'); return; }
         const reader = new FileReader();
         reader.onloadend = async () => {
-            const base64 = reader.result.split(',')[1];
+            const dataUrl = reader.result;
+            const mimeFromUrl = dataUrl.split(';base64,')[0].split(':')[1];
+            const base64 = dataUrl.split(',')[1];
+            const body = mimeFromUrl + ':' + base64;
             try {
                 const result = await api.request('POST', '/api/v1/message/', { to, message: base64, type: 'audio' });
                 saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body: base64, type: 'audio', createdAt: new Date().toISOString() });
