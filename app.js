@@ -556,13 +556,15 @@ document.getElementById('btn-sticker').addEventListener('click', () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             chunks = [];
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/mp4';
-            mediaRecorder = new MediaRecorder(stream, { mimeType });
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            const mimeType = (!isSafari && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 'audio/webm;codecs=opus' : 'audio/mp4';
+            mediaRecorder = new MediaRecorder(stream, mimeType === 'audio/mp4' ? {} : { mimeType });
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
             mediaRecorder.onstop = () => {
                 stream.getTracks().forEach(t => t.stop());
                 if (chunks.length > 0) {
-                    sendAudio(new Blob(chunks, { type: mimeType }));
+                    const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+                    sendAudio(blob);
                 }
             };
             mediaRecorder.start();
