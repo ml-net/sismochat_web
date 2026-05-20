@@ -67,15 +67,12 @@ function renderLocalMessages() {
             const parts = msg.body.split(':');
             const mime = parts.length > 1 && parts[0].startsWith('audio/') ? parts[0] : 'audio/webm';
             const data = parts.length > 1 && parts[0].startsWith('audio/') ? parts.slice(1).join(':') : msg.body;
-            li.innerHTML += `<small>[${mime}, ${data.length} chars]</small> `;
             try {
                 const binary = atob(data);
                 const bytes = new Uint8Array(binary.length);
                 for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
                 audio.src = URL.createObjectURL(new Blob([bytes], { type: mime }));
-            } catch(e) {
-                li.innerHTML += `<small style="color:red">[decode error: ${e.message}]</small>`;
-            }
+            } catch(e) { /* decode error */ }
             li.appendChild(audio);
         } else {
             li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
@@ -303,6 +300,8 @@ async function loadChildren() {
                 const newNick = prompt('New nickname:', u.nick);
                 if (newNick && newNick.trim()) {
                     await api.editChildNick(u.id, newNick.trim());
+                    const creds = getChildCredentials();
+                    if (creds[u.id]) { creds[u.id].nick = newNick.trim(); localStorage.setItem('childCredentials', JSON.stringify(creds)); }
                     loadChildren();
                 }
             };
