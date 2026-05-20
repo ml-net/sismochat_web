@@ -64,7 +64,10 @@ function renderLocalMessages() {
             li.innerHTML = `[${date}] From: ${msg.from} → To: ${msg.to} - `;
             const audio = document.createElement('audio');
             audio.controls = true;
-            audio.src = 'data:audio/webm;codecs=opus;base64,' + msg.body;
+            audio.src = 'data:audio/webm;base64,' + msg.body;
+            if (!audio.canPlayType('audio/webm')) {
+                audio.src = 'data:audio/mp4;base64,' + msg.body;
+            }
             li.appendChild(audio);
         } else {
             li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
@@ -164,8 +167,11 @@ document.getElementById('btn-send-reset').addEventListener('click', async () => 
         result.textContent = res.msg + ' — ' + (res.note || '');
         result.style.color = 'green';
         document.getElementById('reset-confirm-email').value = email;
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.getElementById('reset-confirm').classList.add('active');
+        document.getElementById('reset-confirm-result').textContent = '';
+        setTimeout(() => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('reset-confirm').classList.add('active');
+        }, 2000);
     } catch (e) {
         result.textContent = e.data?.errDesc || 'Error';
         result.style.color = 'red';
@@ -544,12 +550,13 @@ document.getElementById('btn-sticker').addEventListener('click', () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             chunks = [];
-            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/mp4';
+            mediaRecorder = new MediaRecorder(stream, { mimeType });
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
             mediaRecorder.onstop = () => {
                 stream.getTracks().forEach(t => t.stop());
                 if (chunks.length > 0) {
-                    sendAudio(new Blob(chunks, { type: 'audio/webm;codecs=opus' }));
+                    sendAudio(new Blob(chunks, { type: mimeType }));
                 }
             };
             mediaRecorder.start();
@@ -639,7 +646,8 @@ function connectWebSocket(token) {
 
     ws.onopen = () => {
         console.log('WS connected');
-        document.getElementById('chat-nick').textContent += ' 🟢';
+        const nickEl = document.getElementById('chat-nick');
+        if (!nickEl.textContent.includes('🟢')) nickEl.textContent += ' 🟢';
     };
 
     ws.onmessage = async (event) => {
