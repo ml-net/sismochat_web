@@ -540,8 +540,8 @@ document.getElementById('btn-sticker').addEventListener('click', () => {
             const base64 = dataUrl.split(',')[1];
             const body = mimeFromUrl + ':' + base64;
             try {
-                const result = await api.request('POST', '/api/v1/message/', { to, message: base64, type: 'audio' });
-                saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body: base64, type: 'audio', createdAt: new Date().toISOString() });
+                const result = await api.request('POST', '/api/v1/message/', { to, message: body, type: 'audio' });
+                saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body, type: 'audio', createdAt: new Date().toISOString() });
                 renderLocalMessages();
             } catch (e) { alert(e.data?.msg || 'Send failed'); }
         };
