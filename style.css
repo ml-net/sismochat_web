@@ -25,3 +25,9 @@ li { padding: 8px; border-bottom: 1px solid #eee; }
 #emoji-picker span:hover, #sticker-picker span:hover { background: #f0f0f0; }
 #sticker-picker { grid-template-columns: repeat(5, 1fr); }
 #sticker-picker span { font-size: 2em; }
+
+#btn-ptt { padding: 8px; font-size: 1.2em; line-height: 1; flex-shrink: 0; }
+#btn-ptt.recording { background: #dc3545; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+#ptt-status { padding: 10px; border: 1px solid #eee; border-radius: 8px; margin: 10px 0; text-align: center; font-weight: bold; }
+#ptt-status.hidden { display: none; }

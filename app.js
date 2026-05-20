@@ -60,6 +60,12 @@ function renderLocalMessages() {
             const sticker = (window._stickersCache || []).find(s => s.id === msg.body);
             content = sticker ? sticker.emoji : '❓';
             li.innerHTML = `[${date}] From: ${msg.from} → To: ${msg.to} - <span style="font-size:4em">${content}</span>`;
+        } else if (msg.type === 'audio') {
+            li.innerHTML = `[${date}] From: ${msg.from} → To: ${msg.to} - `;
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = 'data:audio/webm;codecs=opus;base64,' + msg.body;
+            li.appendChild(audio);
         } else {
             li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
         }
@@ -494,6 +500,74 @@ document.getElementById('btn-sticker').addEventListener('click', () => {
     document.getElementById('sticker-picker').classList.toggle('hidden');
     document.getElementById('emoji-picker').classList.add('hidden');
 });
+
+// PTT audio recording
+(() => {
+    const MAX_DURATION = 20;
+    let mediaRecorder = null;
+    let chunks = [];
+    let timer = null;
+    let seconds = 0;
+    const btn = document.getElementById('btn-ptt');
+    const status = document.getElementById('ptt-status');
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+        clearInterval(timer);
+        btn.classList.remove('recording');
+        btn.textContent = '🎙️';
+        status.classList.add('hidden');
+    }
+
+    async function sendAudio(blob) {
+        const to = document.getElementById('msg-to').value;
+        if (!to) { alert('Select a recipient first'); return; }
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64 = reader.result.split(',')[1];
+            try {
+                const result = await api.request('POST', '/api/v1/message/', { to, message: base64, type: 'audio' });
+                saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body: base64, type: 'audio', createdAt: new Date().toISOString() });
+                renderLocalMessages();
+            } catch (e) { alert(e.data?.msg || 'Send failed'); }
+        };
+        reader.readAsDataURL(blob);
+    }
+
+    btn.addEventListener('click', async () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            stopRecording();
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            chunks = [];
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                stream.getTracks().forEach(t => t.stop());
+                if (chunks.length > 0) {
+                    sendAudio(new Blob(chunks, { type: 'audio/webm;codecs=opus' }));
+                }
+            };
+            mediaRecorder.start();
+            seconds = 0;
+            btn.classList.add('recording');
+            btn.textContent = '⏹️';
+            status.classList.remove('hidden');
+            status.textContent = `Recording... ${MAX_DURATION}s`;
+            timer = setInterval(() => {
+                seconds++;
+                status.textContent = `Recording... ${MAX_DURATION - seconds}s`;
+                if (seconds >= MAX_DURATION) stopRecording();
+            }, 1000);
+        } catch (e) {
+            alert('Microphone access denied');
+        }
+    });
+})();
 
 // Send message
 document.getElementById('btn-send').addEventListener('click', async () => {
