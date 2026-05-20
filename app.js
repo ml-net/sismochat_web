@@ -55,7 +55,14 @@ function renderLocalMessages() {
     getLocalMessages().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(msg => {
         const li = document.createElement('li');
         const date = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : '';
-        li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
+        let content;
+        if (msg.type === 'sticker') {
+            const sticker = (window._stickersCache || []).find(s => s.id === msg.body);
+            content = sticker ? sticker.emoji : '❓';
+            li.innerHTML = `[${date}] From: ${msg.from} → To: ${msg.to} - <span style="font-size:4em">${content}</span>`;
+        } else {
+            li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
+        }
         if (msg.from === 'me' && msg.serverMsgId) {
             const btn = document.createElement('button');
             btn.textContent = 'Withdraw';
@@ -224,6 +231,7 @@ document.getElementById('btn-user-login').addEventListener('click', async () => 
         const payload = JSON.parse(atob(res.token.split('.')[1]));
         document.getElementById('chat-nick').textContent = payload.nick;
         showView('chat');
+        await loadAssets();
         renderLocalMessages();
         connectWebSocket(res.token);
     } catch (e) {
@@ -429,9 +437,9 @@ document.getElementById('btn-load-contacts').addEventListener('click', async () 
 });
 
 // Emoji picker
-(() => {
-    const emojis = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','❤️','🔥','🎉','✨','🙏','💪','👋','🤗','😴','🤣','😇','🥳','😱','🤮','💀','👀','🫶','💯','🌈','⭐'];
+function populateEmojiPicker(emojis) {
     const picker = document.getElementById('emoji-picker');
+    picker.innerHTML = '';
     emojis.forEach(e => {
         const span = document.createElement('span');
         span.textContent = e;
@@ -442,10 +450,50 @@ document.getElementById('btn-load-contacts').addEventListener('click', async () 
         });
         picker.appendChild(span);
     });
-    document.getElementById('btn-emoji').addEventListener('click', () => {
-        picker.classList.toggle('hidden');
+}
+
+async function loadAssets() {
+    try {
+        const emojis = await api.request('GET', '/api/v1/assets/emojis');
+        populateEmojiPicker(emojis);
+        const stickers = await api.request('GET', '/api/v1/assets/stickers');
+        window._stickersCache = stickers;
+        populateStickerPicker(stickers);
+    } catch (e) {
+        // Fallback: empty pickers
+    }
+}
+
+function populateStickerPicker(stickers) {
+    const picker = document.getElementById('sticker-picker');
+    picker.innerHTML = '';
+    stickers.forEach(s => {
+        const span = document.createElement('span');
+        span.textContent = s.emoji;
+        span.title = s.label;
+        span.addEventListener('click', async () => {
+            const to = document.getElementById('msg-to').value;
+            if (!to) { alert('Select a recipient first'); return; }
+            try {
+                const result = await api.request('POST', '/api/v1/message/', { to, message: s.id, type: 'sticker' });
+                saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body: s.id, type: 'sticker', createdAt: new Date().toISOString() });
+                renderLocalMessages();
+                picker.classList.add('hidden');
+            } catch (e) { alert(e.data?.msg || 'Send failed'); }
+        });
+        picker.appendChild(span);
     });
-})();
+}
+
+document.getElementById('btn-emoji').addEventListener('click', () => {
+    document.getElementById('emoji-picker').classList.toggle('hidden');
+    document.getElementById('sticker-picker').classList.add('hidden');
+});
+
+document.getElementById('btn-sticker').addEventListener('click', () => {
+    document.getElementById('sticker-picker').classList.toggle('hidden');
+    document.getElementById('emoji-picker').classList.add('hidden');
+});
 
 // Send message
 document.getElementById('btn-send').addEventListener('click', async () => {
