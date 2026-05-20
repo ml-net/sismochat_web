@@ -571,7 +571,7 @@ document.getElementById('btn-sticker').addEventListener('click', () => {
                 if (seconds >= MAX_DURATION) stopRecording();
             }, 1000);
         } catch (e) {
-            alert('Microphone access denied');
+            alert('Microphone error: ' + e.name + ' - ' + e.message);
         }
     });
 })();
