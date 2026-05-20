@@ -15,3 +15,11 @@ button:hover { background: #0056b3; }
 .error { color: red; margin-top: 10px; }
 ul { list-style: none; padding: 0; }
 li { padding: 8px; border-bottom: 1px solid #eee; }
+
+.msg-input-row { display: flex; gap: 8px; align-items: center; }
+.msg-input-row input { margin-bottom: 0; }
+#btn-emoji { padding: 8px; font-size: 1.2em; line-height: 1; flex-shrink: 0; }
+#emoji-picker { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin: 10px 0; max-height: 200px; overflow-y: auto; }
+#emoji-picker.hidden { display: none; }
+#emoji-picker span { font-size: 1.4em; cursor: pointer; text-align: center; padding: 4px; border-radius: 4px; }
+#emoji-picker span:hover { background: #f0f0f0; }

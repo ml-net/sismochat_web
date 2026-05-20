@@ -24,6 +24,21 @@
                 <input type="password" id="parent-pwd" placeholder="Password">
                 <button id="btn-parent-login">Login</button>
                 <button id="btn-parent-register">Register</button>
+                <button id="btn-forgot-pwd">Forgot Password?</button>
+            </div>
+            <div id="reset-request" class="tab-content">
+                <p>Enter your email to receive a reset code:</p>
+                <input type="email" id="reset-email" placeholder="Email">
+                <button id="btn-send-reset">Send Reset Code</button>
+                <p id="reset-request-result"></p>
+            </div>
+            <div id="reset-confirm" class="tab-content">
+                <p>Enter the 6-digit code from your email:</p>
+                <input type="email" id="reset-confirm-email" placeholder="Email" readonly>
+                <input type="text" id="reset-otp" placeholder="6-digit code" maxlength="6">
+                <input type="password" id="reset-new-pwd" placeholder="New password (min 6 chars)">
+                <button id="btn-confirm-reset">Reset Password</button>
+                <p id="reset-confirm-result"></p>
             </div>
             <div id="user-login" class="tab-content">
                 <select id="user-select"><option value="">Select a child user...</option></select>
@@ -44,6 +59,13 @@
             <div class="section">
                 <h3>My Children</h3>
                 <ul id="children-list"></ul>
+            </div>
+            <div class="section">
+                <h3>Discover Parent</h3>
+                <input type="email" id="discover-email" placeholder="Search parent by email">
+                <button id="btn-discover">Search</button>
+                <p id="discover-result"></p>
+                <ul id="discover-children"></ul>
             </div>
             <div class="section">
                 <h3>Connection Requests</h3>
@@ -82,7 +104,11 @@
             <div class="section">
                 <h3>Send Message</h3>
                 <input type="text" id="msg-to" placeholder="Recipient ID">
-                <input type="text" id="msg-body" placeholder="Message">
+                <div class="msg-input-row">
+                    <input type="text" id="msg-body" placeholder="Message">
+                    <button type="button" id="btn-emoji" title="Emoji">😀</button>
+                </div>
+                <div id="emoji-picker" class="hidden"></div>
                 <button id="btn-send">Send</button>
             </div>
             <div class="section">

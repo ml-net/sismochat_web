@@ -35,13 +35,15 @@ const api = {
 
     // Auth
     loginParent(email, pwd) { return this.request('POST', '/api/v1/auth/parent', { email, pwd }); },
-    registerParent(email, pwd) { return this.request('POST', '/api/v1/super/', { email, pwd }); },
-    changePassword(oldPassword, newPassword) { return this.request('PATCH', '/api/v1/super/password', { oldPassword, newPassword }); },
+    registerParent(email, pwd) { return this.request('POST', '/api/v1/parent/', { email, pwd }); },
+    changePassword(oldPassword, newPassword) { return this.request('PATCH', '/api/v1/parent/password', { oldPassword, newPassword }); },
+    resetRequest(email) { return this.request('POST', '/api/v1/parent/reset-request', { email }); },
+    resetPassword(email, otp, newPassword) { return this.request('POST', '/api/v1/parent/reset', { email, otp, newPassword }); },
     loginUser(token) { return this.request('POST', '/api/v1/auth/user', { token }); },
 
     // Users
     createChild(nick) { return this.request('POST', '/api/v1/user/', { nick }); },
-    getChildrenByParent(email) { return this.request('GET', '/api/v1/user/parent/' + encodeURIComponent(email)); },
+    getChildrenByParent(email) { return this.request('GET', '/api/v1/parent/' + encodeURIComponent(email) + '/children'); },
     editChildNick(userid, nick) { return this.request('PATCH', '/api/v1/user/' + userid, { nick }); },
     deleteChild(userid) { return this.request('DELETE', '/api/v1/user/' + userid); },
 
@@ -57,7 +59,10 @@ const api = {
     // Connections
     getConnections() { return this.request('GET', '/api/v1/connection/'); },
     requestConnection(from, to) { return this.request('POST', '/api/v1/connection/' + from + '/' + to); },
-    getApprovalList(parent) { return this.request('GET', '/api/v1/connection/approvalList/' + parent); },
-    getSentRequests(parent) { return this.request('GET', '/api/v1/connection/sent/' + parent); },
+    getApprovalList() { return this.request('GET', '/api/v1/parent/me/connections/pending'); },
+    getSentRequests() { return this.request('GET', '/api/v1/parent/me/connections/sent'); },
     approveConnection(connId, status) { return this.request('PATCH', '/api/v1/connection/' + connId, { status }); },
+
+    // Discovery
+    findParent(email) { return this.request('GET', '/api/v1/parent/' + encodeURIComponent(email)); },
 };

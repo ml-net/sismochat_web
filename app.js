@@ -14,9 +14,9 @@ async function privateEncrypt(message, privateKeyPem) {
     return forge.util.encode64(encrypted);
 }
 
-function saveChildCredentials(userId, deviceId, keys) {
+function saveChildCredentials(userId, deviceId, keys, nick) {
     const children = JSON.parse(localStorage.getItem('childCredentials') || '{}');
-    children[userId] = { deviceId, keys };
+    children[userId] = { deviceId, keys, nick };
     localStorage.setItem('childCredentials', JSON.stringify(children));
 }
 
@@ -123,11 +123,70 @@ document.getElementById('btn-parent-register').addEventListener('click', async (
     try {
         const email = document.getElementById('parent-email').value;
         const pwd = document.getElementById('parent-pwd').value;
-        await api.registerParent(email, pwd);
+        const res = await api.registerParent(email, pwd);
+        // Save virtual user credentials for parent-to-child messaging
+        if (res.virtualUser) {
+            saveChildCredentials(res.virtualUser.id, res.virtualUser.deviceId, res.virtualUser.keys);
+            localStorage.setItem('virtualUserId', res.virtualUser.id);
+        }
         document.getElementById('login-error').textContent = 'Registered! Now login.';
     } catch (e) {
         const details = e.data?.details?.map(d => d.msg).join(', ') || '';
         document.getElementById('login-error').textContent = e.data?.errDesc || details || 'Registration failed';
+    }
+});
+
+// Password reset flow
+document.getElementById('btn-forgot-pwd').addEventListener('click', () => {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById('reset-request').classList.add('active');
+    document.getElementById('reset-email').value = document.getElementById('parent-email').value || '';
+});
+
+document.getElementById('btn-send-reset').addEventListener('click', async () => {
+    const email = document.getElementById('reset-email').value;
+    const result = document.getElementById('reset-request-result');
+    try {
+        const res = await api.resetRequest(email);
+        result.textContent = res.msg + ' — ' + (res.note || '');
+        result.style.color = 'green';
+        document.getElementById('reset-confirm-email').value = email;
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById('reset-confirm').classList.add('active');
+    } catch (e) {
+        result.textContent = e.data?.errDesc || 'Error';
+        result.style.color = 'red';
+    }
+});
+
+document.getElementById('btn-confirm-reset').addEventListener('click', async () => {
+    const email = document.getElementById('reset-confirm-email').value;
+    const otp = document.getElementById('reset-otp').value;
+    const newPassword = document.getElementById('reset-new-pwd').value;
+    const result = document.getElementById('reset-confirm-result');
+    try {
+        await api.resetPassword(email, otp, newPassword);
+        result.textContent = 'Password reset successful! You can now login.';
+        result.style.color = 'green';
+        setTimeout(() => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('parent-login').classList.add('active');
+            document.getElementById('parent-email').value = email;
+        }, 2000);
+    } catch (e) {
+        const msg = e.data?.errDesc || 'Error';
+        result.textContent = msg;
+        result.style.color = 'red';
+        if (msg.includes('request a new code') || msg.includes('Invalid or expired')) {
+            setTimeout(() => {
+                document.getElementById('reset-otp').value = '';
+                document.getElementById('reset-new-pwd').value = '';
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.getElementById('reset-request').classList.add('active');
+                document.getElementById('reset-request-result').textContent = 'Code invalidated. Request a new one.';
+                document.getElementById('reset-request-result').style.color = 'red';
+            }, 2000);
+        }
     }
 });
 
@@ -136,10 +195,11 @@ function populateUserSelect() {
     const select = document.getElementById('user-select');
     select.innerHTML = '<option value="">Select a child user...</option>';
     const creds = getChildCredentials();
+    const virtualUserId = localStorage.getItem('virtualUserId');
     Object.keys(creds).forEach(userId => {
         const opt = document.createElement('option');
         opt.value = userId;
-        opt.textContent = userId.substring(0, 8) + '...';
+        opt.textContent = userId === virtualUserId ? '👤 Parent (virtual user)' : (creds[userId].nick || userId.substring(0, 8) + '...');
         select.appendChild(opt);
     });
 }
@@ -177,7 +237,7 @@ document.getElementById('btn-create-child').addEventListener('click', async () =
         const nick = document.getElementById('child-nick').value;
         const res = await api.createChild(nick);
         const deviceRes = await api.createDevice(res.ID);
-        saveChildCredentials(res.ID, deviceRes, res.keys);
+        saveChildCredentials(res.ID, deviceRes, res.keys, nick);
         document.getElementById('child-result').textContent =
             `Created! ID: ${res.ID}, Device: ${deviceRes}`;
         loadChildren();
@@ -224,6 +284,9 @@ async function loadChildren() {
             btnDelete.onclick = async () => {
                 if (confirm(`Delete ${u.nick}? This cannot be undone.`)) {
                     await api.deleteChild(u.id);
+                    const creds = JSON.parse(localStorage.getItem('childCredentials') || '{}');
+                    delete creds[u.id];
+                    localStorage.setItem('childCredentials', JSON.stringify(creds));
                     loadChildren();
                 }
             };
@@ -235,6 +298,32 @@ async function loadChildren() {
         // No children yet
     }
 }
+
+// Discover parent
+document.getElementById('btn-discover').addEventListener('click', async () => {
+    const email = document.getElementById('discover-email').value;
+    const result = document.getElementById('discover-result');
+    const childrenList = document.getElementById('discover-children');
+    childrenList.innerHTML = '';
+    try {
+        await api.findParent(email);
+        const children = await api.getChildrenByParent(email);
+        result.textContent = `Found! ${children.length} child(ren):`;
+        children.forEach(c => {
+            const li = document.createElement('li');
+            li.textContent = `${c.nick} (${c.id.substring(0, 8)}...)`;
+            li.style.cursor = 'pointer';
+            li.title = 'Click to copy UUID';
+            li.onclick = () => {
+                document.getElementById('conn-to').value = c.id;
+                result.textContent = `Selected ${c.nick} as connection target`;
+            };
+            childrenList.appendChild(li);
+        });
+    } catch (e) {
+        result.textContent = e.status === 404 ? 'Parent not found' : (e.data?.errDesc || 'Error');
+    }
+});
 
 // Request connection
 document.getElementById('btn-request-conn').addEventListener('click', async () => {
@@ -256,7 +345,7 @@ document.getElementById('btn-refresh-sent').addEventListener('click', loadSentRe
 
 async function loadSentRequests() {
     try {
-        const list = await api.getSentRequests(parentEmail);
+        const list = await api.getSentRequests();
         const ul = document.getElementById('sent-list');
         ul.innerHTML = '';
         if (!list || list.length === 0) {
@@ -276,7 +365,7 @@ async function loadSentRequests() {
 
 async function loadApprovals() {
     try {
-        const list = await api.getApprovalList(parentEmail);
+        const list = await api.getApprovalList();
         const ul = document.getElementById('approval-list');
         ul.innerHTML = '';
         if (!list || list.length === 0) {
@@ -318,29 +407,45 @@ document.getElementById('btn-load-contacts').addEventListener('click', async () 
             ul.innerHTML = '<li>No contacts</li>';
             return;
         }
-        list.forEach(id => {
+        for (const contact of list) {
             const li = document.createElement('li');
+            const id = contact.id || contact;
+            const nick = contact.nick || id.substring(0, 8) + '...';
             const span = document.createElement('span');
-            span.textContent = id.substring(0, 8) + '...';
+            span.textContent = nick;
             span.title = id;
             span.style.cursor = 'pointer';
             span.onclick = () => {
                 document.getElementById('msg-to').value = id;
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(id);
-                    span.textContent = 'copied!';
-                } else {
-                    prompt('UUID:', id);
-                }
-                setTimeout(() => { span.textContent = id.substring(0, 8) + '...'; }, 1000);
+                span.textContent = 'selected!';
+                setTimeout(() => { span.textContent = nick; }, 1000);
             };
             li.appendChild(span);
             ul.appendChild(li);
-        });
+        }
     } catch (e) {
         document.getElementById('contacts-list').innerHTML = '<li>No contacts</li>';
     }
 });
+
+// Emoji picker
+(() => {
+    const emojis = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','❤️','🔥','🎉','✨','🙏','💪','👋','🤗','😴','🤣','😇','🥳','😱','🤮','💀','👀','🫶','💯','🌈','⭐'];
+    const picker = document.getElementById('emoji-picker');
+    emojis.forEach(e => {
+        const span = document.createElement('span');
+        span.textContent = e;
+        span.addEventListener('click', () => {
+            const input = document.getElementById('msg-body');
+            input.value += e;
+            input.focus();
+        });
+        picker.appendChild(span);
+    });
+    document.getElementById('btn-emoji').addEventListener('click', () => {
+        picker.classList.toggle('hidden');
+    });
+})();
 
 // Send message
 document.getElementById('btn-send').addEventListener('click', async () => {
