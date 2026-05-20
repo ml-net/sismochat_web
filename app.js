@@ -145,7 +145,7 @@ document.getElementById('btn-parent-register').addEventListener('click', async (
         document.getElementById('login-error').textContent = 'Registered! Now login.';
     } catch (e) {
         const details = e.data?.details?.map(d => d.msg).join(', ') || '';
-        document.getElementById('login-error').textContent = e.data?.errDesc || details || 'Registration failed';
+        document.getElementById('login-error').textContent = details || e.data?.errDesc || 'Registration failed';
     }
 });
 
