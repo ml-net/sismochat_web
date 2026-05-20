@@ -67,10 +67,15 @@ function renderLocalMessages() {
             const parts = msg.body.split(':');
             const mime = parts.length > 1 && parts[0].startsWith('audio/') ? parts[0] : 'audio/webm';
             const data = parts.length > 1 && parts[0].startsWith('audio/') ? parts.slice(1).join(':') : msg.body;
-            const binary = atob(data);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-            audio.src = URL.createObjectURL(new Blob([bytes], { type: mime }));
+            li.innerHTML += `<small>[${mime}, ${data.length} chars]</small> `;
+            try {
+                const binary = atob(data);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                audio.src = URL.createObjectURL(new Blob([bytes], { type: mime }));
+            } catch(e) {
+                li.innerHTML += `<small style="color:red">[decode error: ${e.message}]</small>`;
+            }
             li.appendChild(audio);
         } else {
             li.textContent = `[${date}] From: ${msg.from} → To: ${msg.to} - ${msg.body}`;
