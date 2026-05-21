@@ -645,6 +645,12 @@ document.getElementById('btn-parent-logout').addEventListener('click', () => {
     api.clearToken();
     showView('login');
 });
+document.getElementById('btn-clear-messages').addEventListener('click', () => {
+    if (confirm('Clear all local messages?')) {
+        localStorage.removeItem('messages');
+        alert('Messages cleared');
+    }
+});
 document.getElementById('btn-user-logout').addEventListener('click', () => {
     api.clearToken();
     showView('login');
