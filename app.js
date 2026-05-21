@@ -104,6 +104,10 @@ function removeLocalMessage(id) {
 // API URL config
 document.getElementById('api-base').value = localStorage.getItem('apiBase') || 'http://localhost:3000';
 document.getElementById('api-status').textContent = 'Current: ' + (localStorage.getItem('apiBase') || 'http://localhost:3000');
+fetch((localStorage.getItem('apiBase') || 'http://localhost:3000') + '/health')
+    .then(r => r.json())
+    .then(d => { document.getElementById('footer-version').textContent = 'Server v' + d.version; })
+    .catch(() => { document.getElementById('footer-version').textContent = 'Server unreachable'; });
 document.getElementById('btn-set-api').addEventListener('click', () => {
     const url = document.getElementById('api-base').value.replace(/\/$/, '');
     localStorage.setItem('apiBase', url);
