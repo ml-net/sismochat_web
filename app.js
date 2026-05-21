@@ -500,7 +500,7 @@ function populateStickerPicker(stickers) {
                 saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body: s.id, type: 'sticker', createdAt: new Date().toISOString() });
                 renderLocalMessages();
                 picker.classList.add('hidden');
-            } catch (e) { alert(e.data?.msg || 'Send failed'); }
+            } catch (e) { alert(e.data?.msg || e.data?.errDesc || 'Send failed'); }
         });
         picker.appendChild(span);
     });
@@ -549,7 +549,7 @@ document.getElementById('btn-sticker').addEventListener('click', () => {
                 const result = await api.request('POST', '/api/v1/message/', { to, message: body, type: 'audio' });
                 saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body, type: 'audio', createdAt: new Date().toISOString() });
                 renderLocalMessages();
-            } catch (e) { alert(e.data?.msg || 'Send failed'); }
+            } catch (e) { alert(e.data?.msg || e.data?.errDesc || 'Send failed'); }
         };
         reader.readAsDataURL(blob);
     }
@@ -601,7 +601,7 @@ document.getElementById('btn-send').addEventListener('click', async () => {
         saveLocalMessage({ id: Date.now().toString(), serverMsgId: result.messageID, from: 'me', to, body, createdAt: new Date().toISOString() });
         renderLocalMessages();
     } catch (e) {
-        alert(e.data?.msg || 'Send failed');
+        alert(e.data?.msg || e.data?.errDesc || 'Send failed');
     }
 });
 
