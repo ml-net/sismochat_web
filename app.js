@@ -286,9 +286,9 @@ document.getElementById('btn-create-child').addEventListener('click', async () =
         const nick = document.getElementById('child-nick').value;
         const res = await api.createChild(nick);
         const deviceRes = await api.createDevice(res.ID);
-        saveChildCredentials(res.ID, deviceRes, res.keys, nick);
+        saveChildCredentials(res.ID, deviceRes.deviceId, res.keys, nick);
         document.getElementById('child-result').textContent =
-            `Created! ID: ${res.ID}, Device: ${deviceRes}`;
+            `Created! ID: ${res.ID}, Device: ${deviceRes.deviceId}`;
         loadChildren();
     } catch (e) {
         document.getElementById('child-result').textContent = e.data?.errDesc || 'Failed';
