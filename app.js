@@ -141,6 +141,7 @@ document.getElementById('btn-parent-login').addEventListener('click', async () =
     } catch (e) {
         if (e.status === 404 && localStorage.getItem('stateCert')) {
             document.getElementById('login-error').textContent = 'Syncing...';
+            document.getElementById('login-error').style.color = '#007bff';
             try {
                 await api.request('POST', '/api/v1/sync/restore', { stateCert: localStorage.getItem('stateCert') });
                 const res = await api.loginParent(document.getElementById('parent-email').value, document.getElementById('parent-pwd').value);
