@@ -664,17 +664,22 @@ document.getElementById('btn-user-logout').addEventListener('click', () => {
 
 // WebSocket connection
 let ws = null;
+let wsHeartbeatTimer = null;
 function connectWebSocket(token) {
+    if (ws && ws.readyState <= 1) ws.close();
     const wsBase = (localStorage.getItem('apiBase') || 'http://localhost:3000').replace('http', 'ws');
     ws = new WebSocket(wsBase + '/ws?token=' + token);
 
     ws.onopen = () => {
         console.log('WS connected');
         const nickEl = document.getElementById('chat-nick');
-        if (!nickEl.textContent.includes('🟢')) nickEl.textContent += ' 🟢';
+        nickEl.textContent = nickEl.textContent.replace(/ 🔴$/, '').replace(/ 🟢$/, '') + ' 🟢';
+        // Reset heartbeat timer on any activity
+        resetHeartbeat(token);
     };
 
     ws.onmessage = async (event) => {
+        resetHeartbeat(token);
         const data = JSON.parse(event.data);
         console.log('WS notification:', data);
         if (data.type === 'new_message') {
@@ -697,9 +702,22 @@ function connectWebSocket(token) {
 
     ws.onclose = () => {
         console.log('WS disconnected, reconnecting in 3s...');
+        clearTimeout(wsHeartbeatTimer);
+        const nickEl = document.getElementById('chat-nick');
+        if (!nickEl.textContent.includes('🔴')) {
+            nickEl.textContent = nickEl.textContent.replace(/ 🟢$/, '') + ' 🔴';
+        }
         setTimeout(() => {
             const t = api.getToken();
             if (t) connectWebSocket(t);
         }, 3000);
     };
+}
+
+function resetHeartbeat(token) {
+    clearTimeout(wsHeartbeatTimer);
+    wsHeartbeatTimer = setTimeout(() => {
+        // No activity for 60s — server should ping every 30s, connection is dead
+        if (ws) ws.close();
+    }, 60000);
 }
