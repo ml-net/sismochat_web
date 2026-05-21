@@ -263,9 +263,10 @@ document.getElementById('btn-user-login').addEventListener('click', async () => 
             document.getElementById('login-error').textContent = 'No credentials found for this user';
             return;
         }
+        const deviceId = typeof creds.deviceId === 'object' ? creds.deviceId.deviceId : creds.deviceId;
         const encodedUserId = btoa(userId);
-        const encodedDeviceId = btoa(creds.deviceId);
-        const encryptedDevice = await privateEncrypt(creds.deviceId, creds.keys.private);
+        const encodedDeviceId = btoa(deviceId);
+        const encryptedDevice = await privateEncrypt(deviceId, creds.keys.private);
         const token = encodedUserId + '.' + encodedDeviceId + '.' + encryptedDevice;
         const res = await api.loginUser(token);
         api.setToken(res.token);
