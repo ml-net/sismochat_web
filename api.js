@@ -30,6 +30,7 @@ const api = {
         const contentType = res.headers.get('content-type') || '';
         const data = contentType.includes('application/json') ? await res.json().catch(() => null) : await res.text();
         if (!res.ok) throw { status: res.status, data };
+        if (data && data.stateCert) localStorage.setItem('stateCert', data.stateCert);
         return data;
     },
 

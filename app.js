@@ -139,6 +139,24 @@ document.getElementById('btn-parent-login').addEventListener('click', async () =
         showView('parent');
         loadChildren();
     } catch (e) {
+        if (e.status === 404 && localStorage.getItem('stateCert')) {
+            document.getElementById('login-error').textContent = 'Syncing...';
+            try {
+                await api.request('POST', '/api/v1/sync/restore', { stateCert: localStorage.getItem('stateCert') });
+                const res = await api.loginParent(document.getElementById('parent-email').value, document.getElementById('parent-pwd').value);
+                api.setToken(res.token);
+                const payload = JSON.parse(atob(res.token.split('.')[1]));
+                parentEmail = payload.email;
+                currentProfile = 'Parent';
+                document.getElementById('parent-email-display').textContent = parentEmail;
+                showView('parent');
+                loadChildren();
+                return;
+            } catch (e2) {
+                document.getElementById('login-error').textContent = 'Sync failed. Try again later.';
+                return;
+            }
+        }
         document.getElementById('login-error').textContent = e.data?.errDesc || 'Login failed';
     }
 });
@@ -682,7 +700,9 @@ function connectWebSocket(token) {
         resetHeartbeat(token);
         const data = JSON.parse(event.data);
         console.log('WS notification:', data);
-        if (data.type === 'new_message') {
+        if (data.type === 'state_cert' && data.stateCert) {
+            localStorage.setItem('stateCert', data.stateCert);
+        } else if (data.type === 'new_message') {
             // Auto-fetch new messages
             try {
                 const list = await api.getMessageList(0, 10);
