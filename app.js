@@ -145,6 +145,8 @@ document.getElementById('btn-parent-register').addEventListener('click', async (
         const email = document.getElementById('parent-email').value;
         const pwd = document.getElementById('parent-pwd').value;
         const res = await api.registerParent(email, pwd);
+        // New registration = server was reset, clear old local data
+        localStorage.clear();
         // Save virtual user credentials for parent-to-child messaging
         if (res.virtualUser) {
             saveChildCredentials(res.virtualUser.id, res.virtualUser.deviceId, res.virtualUser.keys);
