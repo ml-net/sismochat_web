@@ -678,6 +678,7 @@ document.getElementById('btn-clear-messages').addEventListener('click', () => {
     }
 });
 document.getElementById('btn-user-logout').addEventListener('click', () => {
+    disconnectWebSocket();
     api.clearToken();
     showView('login');
 });
@@ -685,8 +686,18 @@ document.getElementById('btn-user-logout').addEventListener('click', () => {
 // WebSocket connection
 let ws = null;
 let wsHeartbeatTimer = null;
-function connectWebSocket(token) {
+let wsIntentionalClose = false;
+
+function disconnectWebSocket() {
+    wsIntentionalClose = true;
+    clearTimeout(wsHeartbeatTimer);
     if (ws && ws.readyState <= 1) ws.close();
+    ws = null;
+}
+
+function connectWebSocket(token) {
+    disconnectWebSocket();
+    wsIntentionalClose = false;
     const wsBase = (localStorage.getItem('apiBase') || 'http://localhost:3000').replace('http', 'ws');
     ws = new WebSocket(wsBase + '/ws?token=' + token);
 
@@ -694,7 +705,6 @@ function connectWebSocket(token) {
         console.log('WS connected');
         const nickEl = document.getElementById('chat-nick');
         nickEl.textContent = nickEl.textContent.replace(/ 🔴$/, '').replace(/ 🟢$/, '') + ' 🟢';
-        // Reset heartbeat timer on any activity
         resetHeartbeat(token);
     };
 
@@ -705,7 +715,6 @@ function connectWebSocket(token) {
         if (data.type === 'state_cert' && data.stateCert) {
             localStorage.setItem('stateCert', data.stateCert);
         } else if (data.type === 'new_message') {
-            // Auto-fetch new messages
             try {
                 const list = await api.getMessageList(0, 10);
                 const inbox = document.getElementById('inbox');
@@ -722,13 +731,19 @@ function connectWebSocket(token) {
         }
     };
 
-    ws.onclose = () => {
-        console.log('WS disconnected, reconnecting in 3s...');
+    ws.onclose = (event) => {
         clearTimeout(wsHeartbeatTimer);
         const nickEl = document.getElementById('chat-nick');
         if (!nickEl.textContent.includes('🔴')) {
             nickEl.textContent = nickEl.textContent.replace(/ 🟢$/, '') + ' 🔴';
         }
+        if (wsIntentionalClose) return;
+        // Token rejected by server — don't retry with same token
+        if (event.code === 4001) {
+            console.log('WS token rejected, session expired');
+            return;
+        }
+        console.log('WS disconnected, reconnecting in 3s...');
         setTimeout(() => {
             const t = api.getToken();
             if (t) connectWebSocket(t);
@@ -739,7 +754,6 @@ function connectWebSocket(token) {
 function resetHeartbeat(token) {
     clearTimeout(wsHeartbeatTimer);
     wsHeartbeatTimer = setTimeout(() => {
-        // No activity for 60s — server should ping every 30s, connection is dead
         if (ws) ws.close();
     }, 60000);
 }
