@@ -405,10 +405,24 @@ async function loadSentRequests() {
             ul.innerHTML = '<li>No sent requests</li>';
             return;
         }
+        const children = JSON.parse(localStorage.getItem('childCredentials') || '{}');
+        const nickOf = (id) => children[id]?.nick || id.substring(0, 8) + '...';
         const statusNames = ['Accepted', 'Requested', 'Rejected'];
         list.forEach(r => {
             const li = document.createElement('li');
-            li.textContent = `${r.from.substring(0, 8)}... → ${r.to.substring(0, 8)}... [${statusNames[r.status]}]`;
+            li.textContent = `${nickOf(r.from)} → ${nickOf(r.to)} [${statusNames[r.status]}] `;
+            if (r.status === 0) {
+                const btn = document.createElement('button');
+                btn.textContent = '🗑️';
+                btn.title = 'Remove connection';
+                btn.onclick = async () => {
+                    if (confirm(`Remove connection ${nickOf(r.from)} → ${nickOf(r.to)}?`)) {
+                        await api.deleteConnection(r.id);
+                        loadSentRequests();
+                    }
+                };
+                li.appendChild(btn);
+            }
             ul.appendChild(li);
         });
     } catch (e) {

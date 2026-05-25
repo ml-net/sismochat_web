@@ -56,6 +56,7 @@ const api = {
     getMessage(id) { return this.request('GET', '/api/v1/message/' + id); },
     sendMessage(to, message) { return this.request('POST', '/api/v1/message/', { to, message }); },
     deleteMessage(id) { return this.request('DELETE', '/api/v1/message/' + id); },
+    deleteConnection(connId) { return this.request('DELETE', '/api/v1/connection/' + connId); },
 
     // Connections
     getConnections() { return this.request('GET', '/api/v1/connection/'); },
