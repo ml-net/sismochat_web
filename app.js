@@ -351,7 +351,7 @@ async function loadChildren() {
             btnReprovision.onclick = async () => {
                 if (confirm(`Re-provision ${u.nick}? Old device will be invalidated.`)) {
                     try {
-                        const res = await api.createDevice(u.id);
+                        const res = await api.reprovisionDevice(u.id);
                         alert(`Re-provisioned! New device created for ${u.nick}.`);
                     } catch (e) {
                         alert('Re-provision failed: ' + (e.message || e));

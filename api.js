@@ -50,6 +50,7 @@ const api = {
 
     // Devices
     createDevice(userid) { return this.request('POST', '/api/v1/device/' + userid); },
+    reprovisionDevice(userid) { return this.request('PUT', '/api/v1/device/' + userid); },
 
     // Messages
     getMessageList(status, limit) { return this.request('GET', '/api/v1/message/list/' + status + (limit ? '?limit=' + limit : '')); },
