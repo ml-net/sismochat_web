@@ -352,7 +352,8 @@ async function loadChildren() {
                 if (confirm(`Re-provision ${u.nick}? Old device will be invalidated.`)) {
                     try {
                         const res = await api.reprovisionDevice(u.id);
-                        alert(`Re-provisioned! New device created for ${u.nick}.`);
+                        saveChildCredentials(u.id, res.deviceId, res.keys, u.nick);
+                        alert(`Re-provisioned! ${u.nick} can now login from this device.`);
                     } catch (e) {
                         alert('Re-provision failed: ' + (e.message || e));
                     }
